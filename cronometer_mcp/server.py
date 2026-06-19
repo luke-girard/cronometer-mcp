@@ -8,14 +8,21 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+
 from .client import CronometerClient
 from .markdown import generate_food_log_md
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+PORT = int(os.environ.get("PORT", 8000))
+
 mcp = FastMCP(
     "cronometer",
+    host="0.0.0.0",
+    port=PORT,
     instructions=(
         "Cronometer MCP server for nutrition tracking. "
         "Provides access to detailed food logs, daily macro/micro summaries, "
@@ -1139,8 +1146,13 @@ def delete_repeat_item(repeat_item_id: int) -> str:
         return json.dumps({"status": "error", "message": f"{type(e).__name__}: {e}"})
 
 
+@mcp.custom_route("/health_check", methods=["GET"])
+async def health_check(request: Request) -> JSONResponse:
+    return JSONResponse({"status": "ok"})
+
+
 def main():
-    mcp.run(transport="stdio")
+    mcp.run(transport="streamable-http")
 
 
 if __name__ == "__main__":
